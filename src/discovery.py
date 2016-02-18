@@ -1,0 +1,119 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from zeroconf import ServiceBrowser, Zeroconf
+from ssdp import SSDPFinder, DEVICE_TYPE_ROKU
+from log import logger
+
+APPLE_NAMESPACE = '_airplay._tcp.local.'
+GOOGLE_NAMESPACE = '_googlecast._tcp.local.'
+ROKU_ST_NAME = 'roku:ecp'
+UPNP_ST_NAME = 'upnp:rootdevice'
+
+MODEL_NAME_UNKNOWN = 'Unknown'
+
+
+class CastListener(object):
+    def __init__(self, namespace, callback):
+        self.services = {}
+        self.namespace = namespace
+        self.callback = callback
+
+    @property
+    def count(self):
+        return len(self.services)
+
+    @property
+    def devices(self):
+        return list(self.services.values())
+
+    def remove_service(self, zconf, typ, name):
+        self.services.pop(name, None)
+
+    def add_service(self, zconf, typ, name):
+        service = None
+        tries = 0
+        while service is None and tries < 4:
+            service = zconf.get_service_info(typ, name)
+            tries += 1
+
+        if service:
+            host = '.'.join([str(ord(s)) for s in service.address])
+
+            self.services[name] = (host, service.port)
+            display_name = name.split('.')[0]
+
+            # detect model
+            if typ == GOOGLE_NAMESPACE and 'md' in service.properties:
+                # Chromecast case
+                model_name = service.properties['md']
+            elif typ == APPLE_NAMESPACE and 'model' in service.properties:
+                # AppleTV case
+                model_name = service.properties['model']
+            else:
+                model_name = MODEL_NAME_UNKNOWN
+
+            if self.callback is not None:
+                self.callback(host, unicode(display_name).encode('utf8'), model_name)
+
+
+listener = {}
+zconf = {}
+browser = {}
+finder = None
+
+
+def start_discovery(namespace, callback=None):
+    global listener, zconf, browser
+    try:
+        listener[namespace] = CastListener(namespace=namespace, callback=callback)
+        zconf[namespace] = Zeroconf()
+        browser[namespace] = ServiceBrowser(zconf[namespace], namespace, listener[namespace])
+    except:
+        logger.exception('')
+
+
+def cancel_discovery(namespace):
+    try:
+        if namespace in browser:
+            browser[namespace].cancel()
+        if namespace in zconf:
+            zconf[namespace].close()
+    except:
+        logger.exception('')
+
+
+def start_ssdp_discovery(st, device_type=None, callback=None):
+    global finder
+    finder = SSDPFinder(st, device_type=device_type, callback=callback)
+    finder.start()
+
+
+def cancel_ssdp_discovery():
+    global finder
+    if finder is not None:
+        finder.close()
+        finder = None
+
+
+def main():
+    def show(host, name, model):
+        logger.info('host:{}, name:{}, model:{}'.format(host, name, model))
+
+    import log
+    import logging
+    log.init_logger(logging.DEBUG)
+
+    logger.info('start finding device')
+    start_discovery(namespace=APPLE_NAMESPACE, callback=show)
+    start_discovery(namespace=GOOGLE_NAMESPACE, callback=show)
+    start_ssdp_discovery(ROKU_ST_NAME, callback=show)
+    # start_ssdp_discovery(UPNP_ST_NAME, device_type=DEVICE_TYPE_ROKU, callback=show)
+    raw_input()
+    cancel_discovery(namespace=APPLE_NAMESPACE)
+    cancel_discovery(namespace=GOOGLE_NAMESPACE)
+    cancel_ssdp_discovery()
+
+
+if __name__ == '__main__':
+    main()
