@@ -47,6 +47,9 @@ class CastListener(object):
             if typ == GOOGLE_NAMESPACE and 'md' in service.properties:
                 # Chromecast case
                 model_name = service.properties['md']
+                if 'fn' in service.properties:
+                    # get friendly name
+                    display_name = service.properties['fn']
             elif typ == APPLE_NAMESPACE and 'model' in service.properties:
                 # AppleTV case
                 model_name = service.properties['model']
