@@ -50,6 +50,17 @@ class CastListener(object):
                 if 'fn' in service.properties:
                     # get friendly name
                     display_name = service.properties['fn']
+                    try:
+                        unicode(display_name)
+                    except UnicodeDecodeError:
+                        # get friendly name from ssdp desc xml
+                        import urllib2
+                        import xml.etree.cElementTree as ET
+                        tree = ET.ElementTree(file=urllib2.urlopen('http://{}:8008/ssdp/device-desc.xml'.format(host)))
+                        for elem in tree.iter(tag='{urn:schemas-upnp-org:device-1-0}friendlyName'):
+                            display_name = elem.text
+                            break
+
             elif typ == APPLE_NAMESPACE and 'model' in service.properties:
                 # AppleTV case
                 model_name = service.properties['model']
