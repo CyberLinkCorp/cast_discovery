@@ -3,12 +3,14 @@
 
 from zeroconf import ServiceBrowser, Zeroconf
 from ssdp import SSDPFinder, DEVICE_TYPE_ROKU
+from dial import DIALFinder
 from log import logger
 
 APPLE_NAMESPACE = '_airplay._tcp.local.'
 GOOGLE_NAMESPACE = '_googlecast._tcp.local.'
 ROKU_ST_NAME = 'roku:ecp'
 UPNP_ST_NAME = 'upnp:rootdevice'
+FIRETV_MODEL_LIST = ['FireTV', 'FireTV Stick', 'FireTV Edition']
 
 MODEL_NAME_UNKNOWN = 'Unknown'
 
@@ -75,6 +77,7 @@ listener = {}
 zconf = {}
 browser = {}
 finder = None
+dialFinder = None
 
 
 def start_discovery(namespace, callback=None):
@@ -110,6 +113,19 @@ def cancel_ssdp_discovery():
         finder = None
 
 
+def start_dial_discovery(st, model_list=None, callback=None):
+    global dialFinder
+    dialFinder = DIALFinder(st, model_list=model_list, callback=callback)
+    dialFinder.start()
+
+
+def cancel_dial_discovery():
+    global dialFinder
+    if dialFinder is not None:
+        dialFinder.close()
+        dialFinder = None
+
+
 def main():
     def show(host, name, model):
         logger.info('host:{}, name:{}, model:{}'.format(host, name, model))
@@ -122,11 +138,14 @@ def main():
     start_discovery(namespace=APPLE_NAMESPACE, callback=show)
     start_discovery(namespace=GOOGLE_NAMESPACE, callback=show)
     start_ssdp_discovery(ROKU_ST_NAME, callback=show)
+    start_dial_discovery(model_list=FIRETV_MODEL_LIST, callback=show)
+
     # start_ssdp_discovery(UPNP_ST_NAME, device_type=DEVICE_TYPE_ROKU, callback=show)
     raw_input()
     cancel_discovery(namespace=APPLE_NAMESPACE)
     cancel_discovery(namespace=GOOGLE_NAMESPACE)
     cancel_ssdp_discovery()
+    cancel_dial_discovery()
 
 
 if __name__ == '__main__':
