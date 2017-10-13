@@ -10,7 +10,7 @@ APPLE_NAMESPACE = '_airplay._tcp.local.'
 GOOGLE_NAMESPACE = '_googlecast._tcp.local.'
 ROKU_ST_NAME = 'roku:ecp'
 UPNP_ST_NAME = 'upnp:rootdevice'
-FIRETV_MODEL_LIST = ['FireTV', 'FireTV Stick', 'FireTV Edition']
+FIRETV_MODEL_LIST = ['FireTV', 'FireTV Stick', 'FireTV Edition', 'AFTS', 'AFTT']
 
 MODEL_NAME_UNKNOWN = 'Unknown'
 
