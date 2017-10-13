@@ -128,6 +128,12 @@ class DIALFinder(threading.Thread):
                 except AttributeError:
                     continue
 
+                if "Application-URL" in req.headers:
+                    application_url = req.headers.get("Application-URL")
+                else:
+                    logger.error('Application-URL not exist')
+                    continue
+
                 try:
                     model_name = device_info_el.find(XML_NS_UPNP_DEVICE + "modelName").text
                 except AttributeError:
@@ -136,10 +142,11 @@ class DIALFinder(threading.Thread):
                 # if this device is not target model or already in list, ignore it
                 if (self.model_list is not None) and (model_name in self.model_list) and (response.usn not in self.device_list):
                     import re
-                    host = re.findall('[0-9]+(?:\\.[0-9]+){3}', response.location)[0]
-                    self.callback(host, unicode(friendly_name).encode('utf8'), model_name)
+                    host = re.findall('[0-9]+(?:\\.[0-9]+){3}', application_url)[0]
+                    port = re.findall('(?::([0-9]+))', application_url)[0]
+                    self.callback(host, port, unicode(friendly_name).encode('utf8'), model_name)
                     self.device_list.append(response.usn)
-                    logger.info('found FireTV device: %s', friendly_name)
+                    logger.info('found FireTV device: %s host:%s port:%s ', friendly_name, host, port)
 
         logger.info('closing a socket: %s', skt.fileno())
         skt.close()
