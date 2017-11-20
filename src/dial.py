@@ -140,7 +140,7 @@ class DIALFinder(threading.Thread):
                     model_name = MODEL_NAME_UNKNOWN
 
                 # if this device is not target model or already in list, ignore it
-                if (self.model_list is not None) and (model_name in self.model_list) and (response.usn not in self.device_list):
+                if (self.model_list is not None) and checkModelName(self.model_list, model_name) and (response.usn not in self.device_list):
                     import re
                     host = re.findall('[0-9]+(?:\\.[0-9]+){3}', application_url)[0]
                     port = re.findall('(?::([0-9]+))', application_url)[0]
@@ -150,3 +150,10 @@ class DIALFinder(threading.Thread):
 
         logger.info('closing a socket: %s', skt.fileno())
         skt.close()
+
+
+def checkModelName(model_list=None, model_name=None):
+    if (model_name is None or model_list is None):
+        return False
+
+    return model_name.startswith(tuple(model_list))
