@@ -35,8 +35,9 @@ class CastListener(object):
     def add_service(self, zconf, typ, name):
         service = None
         tries = 0
+        timeout = 20000
         while service is None and tries < 4:
-            service = zconf.get_service_info(typ, name)
+            service = zconf.get_service_info(typ, name, timeout)
             tries += 1
 
         if service:
